@@ -32,7 +32,7 @@ a.nav{display:block;position:relative;padding:7px 18px 7px 38px;color:#cfe0ec;te
 .nstat.important{background:#f2c14e;border-color:#f2c14e}
 .nstat.wrong{background:#e8563f;border-color:#e8563f}
 a.nav.active .nstat{border-color:#fff}
-#stlegend{padding:8px 14px 10px;border-bottom:1px solid #24597b;background:var(--nav)}
+a.nav .nhit{position:absolute;right:8px;top:8px;background:#2f8fd0;color:#fff;font-size:10.5px;font-weight:700;border-radius:9px;padding:1px 6px;line-height:1.5}#srchint{padding:6px 14px 8px;font-size:11.5px;color:#9fc0d8;border-bottom:1px solid #24597b;background:var(--nav);display:none}#srchint b{color:#fff}#stlegend{padding:8px 14px 10px;border-bottom:1px solid #24597b;background:var(--nav)}
 #stlegend .lgt{font-size:10.5px;color:#7fa8c6;letter-spacing:.5px;font-weight:700;margin-bottom:6px}
 #stlegend .lgrow{display:flex;flex-wrap:wrap;gap:5px}
 #stlegend .lg{display:flex;align-items:center;gap:5px;font-size:11.5px;color:#cfe0ec;
@@ -208,8 +208,8 @@ a.nav .mg{opacity:.45;font-size:11px}
 <div id="app">
   <aside id="sidebar">
     <div id="brand"><h1>流病博班資格考<br>統整複習網站</h1>
-      <input id="search" placeholder="🔍 搜尋章節 / 年度 / 名詞…"></div>
-<div id="stlegend"><div class="lgt">閱讀狀態（點圓點循環切換 · 點下方標籤可篩選）</div><div class="lgrow"><span class="lg" data-f="done"><span class="lgd done"></span>已讀懂 <span class="lgn" id="lgn-done">0</span></span><span class="lg" data-f="important"><span class="lgd important"></span>再回來讀 <span class="lgn" id="lgn-important">0</span></span><span class="lg" data-f="wrong"><span class="lgd wrong"></span>有不懂 <span class="lgn" id="lgn-wrong">0</span></span><span class="lg" data-f="none"><span class="lgd"></span>未標記 <span class="lgn" id="lgn-none">0</span></span></div></div>
+      <input id="search" placeholder="🔍 全站搜尋：標題 / 內文 / 公式…"></div>
+<div id="srchint"></div><div id="stlegend"><div class="lgt">閱讀狀態（點圓點循環切換 · 點下方標籤可篩選）</div><div class="lgrow"><span class="lg" data-f="done"><span class="lgd done"></span>已讀懂 <span class="lgn" id="lgn-done">0</span></span><span class="lg" data-f="important"><span class="lgd important"></span>再回來讀 <span class="lgn" id="lgn-important">0</span></span><span class="lg" data-f="wrong"><span class="lgd wrong"></span>有不懂 <span class="lgn" id="lgn-wrong">0</span></span><span class="lg" data-f="none"><span class="lgd"></span>未標記 <span class="lgn" id="lgn-none">0</span></span></div></div>
     <nav id="navlist"><div class="navgroup">開始</div>
 <a class="nav home" href="#" data-key="a-sched">🗓️ 複習作息表（7/19–8/3）</a>
 <a class="nav home" href="#" data-key="a-home">📍 學習地圖（先看這）</a>
@@ -32541,7 +32541,32 @@ var currentKey=null, NAVLABELS={};
 function epiEsc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function epiChip(st){if(st==="wrong")return '<span class="epichip cw">🔴 不懂</span>';if(st==="important")return '<span class="epichip ci">🟡 重要</span>';if(st==="done")return '<span class="epichip cd">🟢 已懂</span>';return '';}
 function refreshDots(){var o=epiLoad();var cnt={done:0,important:0,wrong:0,none:0};navEls.forEach(function(a){var k=a.dataset.key,d=(o.docs&&o.docs[k])||null;var st=(d&&d.status)||"";var dot=a.querySelector(".nstat");if(!dot){dot=document.createElement("span");dot.className="nstat";dot.title="點一下切換：未標記 → 已讀懂 → 再回來讀 → 有不懂";a.insertBefore(dot,a.firstChild);}dot.className="nstat"+(st?" "+st:"");cnt[st||"none"]=(cnt[st||"none"]||0)+1;var old=a.querySelector(".ndot");if(old)old.remove();var hasN=d&&((d.note&&d.note.trim())||(d.hls&&d.hls.filter(Boolean).length));if(hasN){var sp=document.createElement("span");sp.className="ndot";sp.textContent=" 📝";a.appendChild(sp);}});["done","important","wrong","none"].forEach(function(x){var el=document.getElementById("lgn-"+x);if(el)el.textContent=cnt[x]||0;});applyNavVis();}
-function applyNavVis(){var o=epiLoad(),q=window.__navQ||"",f=window.__stFilter||"";navEls.forEach(function(a){var okQ=!q||a.textContent.toLowerCase().indexOf(q)>=0;var st=((o.docs&&o.docs[a.dataset.key]&&o.docs[a.dataset.key].status)||"")||"none";var okF=!f||st===f;a.style.display=(okQ&&okF)?"block":"none";});var hide=q||f;[].forEach.call(document.querySelectorAll(".navgroup"),function(g){g.style.display=hide?"none":"block";});}
+
+var FTIDX=null;
+function ftBuild(){
+  if(FTIDX) return FTIDX;
+  FTIDX={};
+  var tmp=document.createElement('div');
+  document.querySelectorAll('template.apppage').forEach(function(t){
+    tmp.innerHTML=t.innerHTML;
+    FTIDX[t.dataset.key]=(tmp.textContent||'').replace(/\s+/g,' ').toLowerCase();
+  });
+  document.querySelectorAll('script.docsrc').forEach(function(s){
+    var txt=(s.textContent||'').replace(/<[^>]+>/g,' ');
+    try{ txt=txt.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&'); }catch(e){}
+    FTIDX[s.dataset.key]=txt.replace(/\s+/g,' ').toLowerCase();
+  });
+  tmp.innerHTML='';
+  return FTIDX;
+}
+function ftCount(key,q){
+  var idx=ftBuild(), s=idx[key];
+  if(!s||!q) return 0;
+  var n=0,p=0;
+  while((p=s.indexOf(q,p))>=0){n++;p+=q.length;}
+  return n;
+}
+function applyNavVis(){var o=epiLoad(),q=window.__navQ||"",f=window.__stFilter||"";var pages=0,hits=0;navEls.forEach(function(a){var k=a.dataset.key;var inTitle=!q||a.textContent.toLowerCase().indexOf(q)>=0;var n=q?ftCount(k,q):0;var okQ=!q||inTitle||n>0;var st=((o.docs&&o.docs[k]&&o.docs[k].status)||"")||"none";var okF=!f||st===f;var show=okQ&&okF;a.style.display=show?"block":"none";var badge=a.querySelector(".nhit");if(q&&show&&n>0){if(!badge){badge=document.createElement("span");badge.className="nhit";a.appendChild(badge);}badge.textContent=n;}else if(badge){badge.remove();}if(show&&q){pages++;hits+=n;}});var hide=q||f;[].forEach.call(document.querySelectorAll(".navgroup"),function(g){g.style.display=hide?"none":"block";});var hint=document.getElementById("srchint");if(hint){if(q){hint.style.display="block";hint.innerHTML=pages?("找到 <b>"+pages+"</b> 頁"+(hits?("，內文共 <b>"+hits+"</b> 處"):"（僅標題符合）")):"查無結果";}else{hint.style.display="none";hint.innerHTML="";}}}
 var ST_CYCLE=["","done","important","wrong"];
 function cycleStatus(key){var o=epiLoad(),d=epiDocOf(o,key);var i=ST_CYCLE.indexOf(d.status||"");d.status=ST_CYCLE[(i+1)%ST_CYCLE.length]||null;epiSave(o);refreshDots();if(typeof updateBar==="function"&&key===currentKey)updateBar(key);}
 function wireNavStatus(){document.getElementById("navlist").addEventListener("click",function(e){var d=e.target.closest(".nstat");if(!d)return;e.preventDefault();e.stopPropagation();var a=d.closest("a.nav");if(a)cycleStatus(a.dataset.key);},true);var lg=document.getElementById("stlegend");if(!lg)return;lg.addEventListener("click",function(e){var b=e.target.closest(".lg");if(!b)return;var f=b.dataset.f;window.__stFilter=(window.__stFilter===f)?"":f;[].forEach.call(lg.querySelectorAll(".lg"),function(x){x.classList.toggle("on",x.dataset.f===window.__stFilter);});refreshDots();});}
