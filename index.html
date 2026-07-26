@@ -32595,9 +32595,12 @@ function shApply(q){
       var tn=p.nodeName;
       if(tn==='SCRIPT'||tn==='STYLE'||tn==='MARK'||tn==='svg'||tn==='SVG'||/^MJX/.test(tn)) return NodeFilter.FILTER_REJECT;
       if(p.classList&&(p.classList.contains('epi-ui')||p.classList.contains('qbar'))) return NodeFilter.FILTER_REJECT;
+      if(p.classList&&(p.classList.contains('fml')||p.classList.contains('dag')||p.classList.contains('mjx-math'))) return NodeFilter.FILTER_REJECT;
       p=p.parentNode;
     }
-    return (t.nodeValue&&t.nodeValue.toLowerCase().indexOf(q)>=0)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
+    var v=t.nodeValue||'';
+    if(/\\\(|\\\[|\\frac|\\begin|\\sum|\\beta|\\alpha/.test(v)) return NodeFilter.FILTER_REJECT;
+    return (v.toLowerCase().indexOf(q)>=0)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
   }});
   var nodes=[],n;
   while(n=walker.nextNode()) nodes.push(n);
