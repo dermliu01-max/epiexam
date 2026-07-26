@@ -32,7 +32,7 @@ a.nav{display:block;position:relative;padding:7px 18px 7px 38px;color:#cfe0ec;te
 .nstat.important{background:#f2c14e;border-color:#f2c14e}
 .nstat.wrong{background:#e8563f;border-color:#e8563f}
 a.nav.active .nstat{border-color:#fff}
-a.nav .nhit{position:absolute;right:8px;top:8px;background:#2f8fd0;color:#fff;font-size:10.5px;font-weight:700;border-radius:9px;padding:1px 6px;line-height:1.5}#srchint{padding:6px 14px 8px;font-size:11.5px;color:#9fc0d8;border-bottom:1px solid #24597b;background:var(--nav);display:none}#srchint b{color:#fff}#stlegend{padding:8px 14px 10px;border-bottom:1px solid #24597b;background:var(--nav)}
+#appPage mark.sh{background:#ffe9a8;color:inherit;padding:0 1px;border-radius:2px}#appPage mark.sh.cur{background:#ffb84d;box-shadow:0 0 0 2px rgba(255,150,0,.35)}#shbar{position:sticky;top:0;z-index:20;display:none;align-items:center;gap:10px;flex-wrap:wrap;padding:7px 12px;margin:0 0 12px;background:#fff7e0;border:1px solid #f0dCa8;border-radius:6px;font-size:13px;color:#4a4433}#shbar b{color:#1a1a1a}#shbar .shb{cursor:pointer;border:1px solid #dccfa4;background:#fff;border-radius:5px;padding:2px 9px;font-size:12.5px}#shbar .shb:hover{background:#fdf3d8}a.nav .nhit{position:absolute;right:8px;top:8px;background:#2f8fd0;color:#fff;font-size:10.5px;font-weight:700;border-radius:9px;padding:1px 6px;line-height:1.5}#srchint{padding:6px 14px 8px;font-size:11.5px;color:#9fc0d8;border-bottom:1px solid #24597b;background:var(--nav);display:none}#srchint b{color:#fff}#stlegend{padding:8px 14px 10px;border-bottom:1px solid #24597b;background:var(--nav)}
 #stlegend .lgt{font-size:10.5px;color:#7fa8c6;letter-spacing:.5px;font-weight:700;margin-bottom:6px}
 #stlegend .lgrow{display:flex;flex-wrap:wrap;gap:5px}
 #stlegend .lg{display:flex;align-items:center;gap:5px;font-size:11.5px;color:#cfe0ec;
@@ -314,6 +314,7 @@ a.nav .mg{opacity:.45;font-size:11px}
     </div>
     <div id="abpanel" style="display:none"><textarea id="abtext" placeholder="這一份的整體筆記／待複習事項…"></textarea></div>
     <div id="mergebar"></div>
+    <div id="shbar" class="epi-ui"></div>
     <div id="appPage"></div>
     <iframe id="docFrame" title="doc"></iframe>
   </main>
@@ -32566,6 +32567,69 @@ function ftCount(key,q){
   while((p=s.indexOf(q,p))>=0){n++;p+=q.length;}
   return n;
 }
+
+var SH={q:'',marks:[],i:-1};
+function shClear(){
+  var root=appPage;
+  root.querySelectorAll('mark.sh').forEach(function(m){
+    var p=m.parentNode; if(!p) return;
+    p.replaceChild(document.createTextNode(m.textContent),m); p.normalize();
+  });
+  SH.marks=[];SH.i=-1;
+  var bar=document.getElementById('shbar'); if(bar) bar.style.display='none';
+}
+function shApply(q){
+  shClear();
+  if(!q) return;
+  SH.q=q;
+  var root=appPage.querySelector('.qa')||appPage;
+  var walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:function(t){
+    var p=t.parentNode;
+    while(p&&p!==root){
+      var tn=p.nodeName;
+      if(tn==='SCRIPT'||tn==='STYLE'||tn==='MARK'||tn==='svg'||tn==='SVG'||/^MJX/.test(tn)) return NodeFilter.FILTER_REJECT;
+      if(p.classList&&(p.classList.contains('epi-ui')||p.classList.contains('qbar'))) return NodeFilter.FILTER_REJECT;
+      p=p.parentNode;
+    }
+    return (t.nodeValue&&t.nodeValue.toLowerCase().indexOf(q)>=0)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
+  }});
+  var nodes=[],n;
+  while(n=walker.nextNode()) nodes.push(n);
+  nodes.forEach(function(t){
+    var s=t.nodeValue, low=s.toLowerCase(), frag=document.createDocumentFragment(), last=0, p;
+    while((p=low.indexOf(q,last))>=0){
+      if(p>last) frag.appendChild(document.createTextNode(s.slice(last,p)));
+      var mk=document.createElement('mark'); mk.className='sh'; mk.textContent=s.slice(p,p+q.length);
+      frag.appendChild(mk); SH.marks.push(mk); last=p+q.length;
+    }
+    if(last<s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+    if(t.parentNode) t.parentNode.replaceChild(frag,t);
+  });
+  var bar=document.getElementById('shbar');
+  if(bar){
+    if(SH.marks.length){
+      bar.style.display='flex';
+      bar.innerHTML='本頁命中 <b>'+SH.marks.length+'</b> 處：<span id="shpos">–</span>'
+        +'<span class="shb" data-d="-1">↑ 上一個</span><span class="shb" data-d="1">↓ 下一個</span>'
+        +'<span class="shb" data-d="0">✕ 清除高亮</span>'
+        +'<span style="opacity:.7">（按 Enter 可跳下一處）</span>';
+      bar.querySelectorAll('.shb').forEach(function(el){
+        el.onclick=function(){var dd=+el.dataset.d; if(dd===0){shClear();} else shGo(dd);};
+      });
+      shGo(1);
+    } else { bar.style.display='none'; }
+  }
+}
+function shGo(d){
+  if(!SH.marks.length) return;
+  if(SH.i>=0&&SH.marks[SH.i]) SH.marks[SH.i].classList.remove('cur');
+  SH.i=(SH.i+d+SH.marks.length)%SH.marks.length;
+  var m=SH.marks[SH.i];
+  m.classList.add('cur');
+  var it=m.closest('.item'); if(it&&it.classList.contains('collapsed')) it.classList.remove('collapsed');
+  if(m.scrollIntoView) m.scrollIntoView({block:'center'});
+  var pos=document.getElementById('shpos'); if(pos) pos.textContent=(SH.i+1)+' / '+SH.marks.length;
+}
 function applyNavVis(){var o=epiLoad(),q=window.__navQ||"",f=window.__stFilter||"";var pages=0,hits=0;navEls.forEach(function(a){var k=a.dataset.key;var inTitle=!q||a.textContent.toLowerCase().indexOf(q)>=0;var n=q?ftCount(k,q):0;var okQ=!q||inTitle||n>0;var st=((o.docs&&o.docs[k]&&o.docs[k].status)||"")||"none";var okF=!f||st===f;var show=okQ&&okF;a.style.display=show?"block":"none";var badge=a.querySelector(".nhit");if(q&&show&&n>0){if(!badge){badge=document.createElement("span");badge.className="nhit";a.appendChild(badge);}badge.textContent=n;}else if(badge){badge.remove();}if(show&&q){pages++;hits+=n;}});var hide=q||f;[].forEach.call(document.querySelectorAll(".navgroup"),function(g){g.style.display=hide?"none":"block";});var hint=document.getElementById("srchint");if(hint){if(q){hint.style.display="block";hint.innerHTML=pages?("找到 <b>"+pages+"</b> 頁"+(hits?("，內文共 <b>"+hits+"</b> 處"):"（僅標題符合）")):"查無結果";}else{hint.style.display="none";hint.innerHTML="";}}}
 var ST_CYCLE=["","done","important","wrong"];
 function cycleStatus(key){var o=epiLoad(),d=epiDocOf(o,key);var i=ST_CYCLE.indexOf(d.status||"");d.status=ST_CYCLE[(i+1)%ST_CYCLE.length]||null;epiSave(o);refreshDots();if(typeof updateBar==="function"&&key===currentKey)updateBar(key);}
@@ -32704,6 +32768,7 @@ function qcWire(pk){
 }
 function wireApp(){
         try{var _qa=appPage.querySelector(".qa.exam"); if(_qa) qsWire(currentKey);}catch(e){}
+        try{ if(window.__navQ) shApply(window.__navQ); else shClear(); }catch(e){}
         try{var _qa2=appPage.querySelector(".qa.exam"); if(_qa2) qcWire(currentKey);}catch(e){}
         
   appPage.querySelectorAll('a[data-goto]').forEach(a=>{a.onclick=e=>{e.preventDefault();show(a.dataset.goto);};});
@@ -32741,9 +32806,17 @@ function show(key){
 }
 navEls.forEach(a=>a.addEventListener('click',e=>{e.preventDefault();show(a.dataset.key);if(window.innerWidth<=820)document.getElementById('sidebar').classList.remove('open');}));
 document.getElementById('search').addEventListener('input',e=>{
-  window.__navQ=e.target.value.trim().toLowerCase();
-  applyNavVis();
-});
+      window.__navQ=e.target.value.trim().toLowerCase();
+      applyNavVis();
+      try{ if(appPage.style.display!=='none'){ if(window.__navQ) shApply(window.__navQ); else shClear(); } }catch(err){}
+    });
+    document.getElementById('search').addEventListener('keydown',e=>{
+      if(e.key!=='Enter') return;
+      e.preventDefault();
+      if(SH.marks.length){ shGo(e.shiftKey?-1:1); return; }
+      var first=navEls.filter(a=>a.style.display!=='none')[0];
+      if(first) show(first.dataset.key);
+    });
 document.getElementById('mobtoggle').onclick=()=>document.getElementById('sidebar').classList.toggle('open');
 navEls.forEach(function(a){NAVLABELS[a.dataset.key]=a.textContent.replace(/\s+/g,' ').trim();});
 initParentAnnot(); wireBar(); wireNavStatus();
