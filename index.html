@@ -1316,8 +1316,14 @@ a.nav .mg{opacity:.45;font-size:11px}
 <div class="term"><div class="tname">誤分類方向 <span class="tzh">misclassification direction</span></div>
 <div class="def">非差異×獨立×<b>二元</b>暴露→偏向 null（保守低估）；<b>多分類</b>非差異→不保證偏 null；<b>differential</b>→方向大小皆不定；<b>confounder</b> 測錯→方向難定、不具參考價值。</div></div>
 
-<div class="term"><div class="tname">Berksonian / M-bias <span class="tzh">柏克森偏差／M 型偏差</span></div>
-<div class="def">Berksonian＝case-control 用便利 control 時，若選樣同時受暴露與疾病影響（選樣＝collider），條件化後扭曲關聯。M-bias＝即使無直接因果、無共同原因，條件化在「兩者相關變項的共同後代」也會憑空造關聯。</div></div>
+<div class="term"><div class="tname">Berksonian bias <span class="tzh">柏克森偏差</span></div>
+<div class="def"><b>屬於 selection bias。</b>case-control 無法對源人群隨機抽樣、改用<b>便利對照</b>（如住院病人）時，若「<b>是否被選入研究</b>」同時受<b>暴露</b>與<b>疾病</b>影響 → <b>選樣本身就是 collider</b>，條件化於它即扭曲 exposure–disease 的關聯。<br><b>結構：</b><span class="dag">E → S ← D</span>（S＝被選入研究）；<b>經典例：</b>雌激素 → 子宮出血 → 就醫／被選為對照 ← 子宮內膜癌。<br><b>解法：</b>用 <b>population-based control</b>（戶籍／選民名冊隨機抽樣），或選<b>與暴露無關</b>之就診原因的對照。</div></div>
+
+<div class="term"><div class="tname">M-bias <span class="tzh">M 型偏差</span></div>
+<div class="def"><b>屬於 collider bias 的特例，與 Berksonian 不同：問題出在「<u>調整了不該調整的共變項</u>」，不是抽樣。</b><br><b>結構：</b><span class="dag">E ← U₁ → L ← U₂ → D</span>——L 是兩個<b>未測</b>因子的<b>共同後代（collider）</b>；E 與 D 之間<b>原本沒有</b>後門路徑（路徑天生封閉）。<b>一旦把 L 放進模型調整</b>，就打開 U₁⋯U₂ 而<b>憑空製造</b> E–D 的假關聯。<br><b>陷阱：</b>L 看起來「與 E、D 都相關」，用傳統統計準則會誤判為 confounder；<b>必須先畫 DAG</b> 才分得出來。<br><b>解法：</b><b>不要</b>調整 L。</div></div>
+
+<div class="term"><div class="tname">Berksonian vs M-bias <span class="tzh">一句話分辨</span></div>
+<div class="def"><b>共同點：</b>兩者都是<b>條件化在 collider</b> 上造成的偏差。<br><span class="hl"><b>差別在「怎麼被條件化」：</b>Berksonian 是<b>選樣機制</b>（誰被收進研究）造成的 → 屬 <b>selection bias</b>，在<b>研究設計／抽樣</b>階段發生；M-bias 是<b>分析時多調整了一個變項</b>造成的 → 在<b>統計分析</b>階段發生。</span><br>因此前者靠<b>改變對照選取方式</b>預防，後者靠<b>不調整該變項</b>避免。</div></div>
 
 <div class="term"><div class="tname">系統性偏差 vs 隨機變異 <span class="tzh">哪種 RCT 能解決</span></div>
 <div class="def">混雜→RCT <b>可</b>解決（隨機化）；選擇偏差、測量偏差→RCT <b>也會發生</b>（需設計/盲性/IPW）。隨機變異＝抽樣誤差→加大樣本、以 CI 表達。</div></div>
