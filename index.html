@@ -261,6 +261,18 @@ a.nav .mg{opacity:.45;font-size:11px}
 #appPage .tbar .tt{margin-left:auto;display:inline-flex;gap:6px}
 @media print{#appPage .tbar{display:none!important}}
 </style>
+<style id="pinCss">
+#pinbox{display:none}
+#pinbox .navgroup{color:#ffd98a}
+a.nav{padding-right:30px}
+a.nav .nhit{right:28px}
+a.nav .pinbtn{position:absolute;right:6px;top:6px;font-size:12px;line-height:1;opacity:0;cursor:pointer;user-select:none;filter:grayscale(1);transition:opacity .12s}
+a.nav:hover .pinbtn{opacity:.55}
+a.nav .pinbtn:hover{opacity:1!important}
+a.nav .pinbtn.on{opacity:1;filter:none}
+a.nav.pinclone{border-left-color:#ffd98a}
+@media print{#pinbox{display:none!important}}
+</style>
 </head>
 <body>
 <button id="mobtoggle">☰</button>
@@ -32613,6 +32625,54 @@ initParentAnnot(); wireBar(); wireNavStatus();
 window.addEventListener('message',function(e){if(e.data&&e.data.epi==='changed'){refreshDots();if(currentKey==='a-mynotes')buildMyNotes();}});
 window.addEventListener('storage',function(){refreshDots();if(currentKey==='a-mynotes')buildMyNotes();});
 refreshDots();
+
+/* ===== 側欄釘選（pin）===== */
+var PINKEY="EPI_PIN_v1";
+function pinLoad(){try{return JSON.parse(localStorage.getItem(PINKEY))||[];}catch(e){return [];}}
+function pinSave(a){try{localStorage.setItem(PINKEY,JSON.stringify(a));}catch(e){}}
+function pinToggle(k){var a=pinLoad(),i=a.indexOf(k);if(i>=0)a.splice(i,1);else a.push(k);pinSave(a);renderPins();}
+function mkPinBtn(a){
+  var b=document.createElement('span');b.className='pinbtn epi-ui';b.textContent='\uD83D\uDCCC';
+  b.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();pinToggle(a.dataset.key);},true);
+  a.appendChild(b);return b;
+}
+function syncPinBtns(){
+  var s=pinLoad();
+  [].forEach.call(document.querySelectorAll('#navlist a.nav'),function(a){
+    var b=a.querySelector('.pinbtn');if(!b)b=mkPinBtn(a);
+    var on=s.indexOf(a.dataset.key)>=0;
+    b.classList.toggle('on',on);
+    b.title=on?'\u53d6\u6d88\u91d8\u9078':'\u91d8\u9078\u5230\u6700\u4e0a\u65b9';
+  });
+}
+function renderPins(){
+  var box=document.getElementById('pinbox');if(!box)return;
+  [].slice.call(box.querySelectorAll('a.nav')).forEach(function(c){
+    var i=navEls.indexOf(c);if(i>=0)navEls.splice(i,1);c.parentNode.removeChild(c);});
+  var list=pinLoad();
+  box.style.display=list.length?'block':'none';
+  list.forEach(function(k){
+    var src=document.querySelector('#navlist a.nav[data-key="'+k+'"]:not(.pinclone)');
+    if(!src)return;
+    var a=document.createElement('a');
+    a.className=src.className.replace(/\bactive\b/,'').trim()+' pinclone';
+    a.href='#';a.dataset.key=k;
+    a.textContent=(typeof NAVLABELS!=='undefined'&&NAVLABELS[k])?NAVLABELS[k]:src.textContent.replace(/\s+/g,' ').trim();
+    a.addEventListener('click',function(e){e.preventDefault();show(k);
+      if(window.innerWidth<=820)document.getElementById('sidebar').classList.remove('open');});
+    box.appendChild(a);navEls.push(a);
+  });
+  syncPinBtns();
+  try{refreshDots();}catch(e){}
+  try{setActive(currentKey);}catch(e){}
+}
+(function initPins(){
+  var nl=document.getElementById('navlist');if(!nl)return;
+  var box=document.createElement('div');box.id='pinbox';box.className='epi-ui';
+  box.innerHTML='<div class="navgroup">\uD83D\uDCCC \u91d8\u9078\uff08\u6ed1\u9f20\u79fb\u5230\u9805\u76ee\u4e0a\uff0c\u9ede\u53f3\u5074\u5716\u91d8\uff09</div>';
+  nl.insertBefore(box,nl.firstChild);
+  renderPins();
+})();
 show('a-home');
 </script>
 
